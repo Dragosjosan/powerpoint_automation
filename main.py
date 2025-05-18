@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import traceback
 from pathlib import Path
 from typing import Dict, Any
 
@@ -11,12 +12,11 @@ from PIL import Image
 
 logger.add(
     sys.stderr,
-    format="{time} {level} {message}\n{exception}",
-    colorize=True,
-    filter="main.py",
+    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <level>{message}</level>",
     level="DEBUG",
-    backtrace=True,
-    diagnose=True
+    backtrace=True,    # Show traceback for errors
+    diagnose=True,     # Show variables in traceback
+    catch=True,        # Catch exceptions in the logging handler
 )
 
 
@@ -45,7 +45,7 @@ def load_data(data_path: str) -> Dict[str, Any]:
             return json.load(f)
         
     except Exception as e:
-        logger.error(f"Failed to load data from {data_path}: {e}")
+        logger.exception(f"Failed to load data from {data_path}")
         raise PowerPointTemplateError(f"Failed to load data: {e}") from e
 
 class PowerPointTemplate:
@@ -56,7 +56,7 @@ class PowerPointTemplate:
     
     def _initialize_template(self, template_path: str) -> str:
         if not Path(template_path).exists():
-            logger.error(f"Template file not found: {template_path}")
+            logger.exception(f"Template file not found: {template_path}")
             raise FileNotFoundError(f"Template file not found: {template_path}")
         logger.debug(f"Template file found: {template_path}")
         return template_path
@@ -74,7 +74,7 @@ class PowerPointTemplate:
             logger.debug(f"Slide map created")
             return slide_map
         except Exception as e:
-            logger.error(f"Failed to create slide map: {e}")
+            logger.exception("Failed to create slide map")
             raise PowerPointTemplateError(f"Failed to create slide map: {e}") from e
         
 
@@ -101,10 +101,10 @@ class PowerPointTemplate:
                         logger.debug(f"Input data contains image data for slide: '{slide_name}'")
                         self._replace_images(slide, slide_data["images"])
                 except Exception as e:
-                    logger.error(f"Error processing slide '{slide_name}': {e}")
+                    logger.exception(f"Error processing slide '{slide_name}'")
                     continue
         except Exception as e:
-            logger.error(f"Failed to apply data to presentation: {e}")
+            logger.exception("Failed to apply data to presentation")
             raise PowerPointTemplateError(f"Failed to apply data: {e}") from e
     
 
@@ -125,10 +125,10 @@ class PowerPointTemplate:
                     if text != shape.text:
                         shape.text = text
                 except Exception as e:
-                    logger.error(f"Error processing shape in slide: {e}")
+                    logger.exception("Error processing shape in slide")
                     continue
         except Exception as e:
-            logger.error(f"Failed to replace text placeholders: {e}")
+            logger.exception("Failed to replace text placeholders")
             raise PowerPointTemplateError(f"Failed to replace text: {e}") from e
     
 
@@ -164,12 +164,12 @@ class PowerPointTemplate:
                     else:
                         logger.warning(f"Table {table_index} not found or no data provided")
                 except Exception as e:
-                    logger.error(f"Error updating table {table_index}: {e}")
+                    logger.exception(f"Error updating table {table_index}")
                     continue
         except TableNotFoundError as e:
             logger.warning(str(e))
         except Exception as e:
-            logger.error(f"Failed to update tables: {e}")
+            logger.exception("Failed to update tables")
             raise PowerPointTemplateError(f"Failed to update tables: {e}") from e
     
 
@@ -207,10 +207,10 @@ class PowerPointTemplate:
                     logger.warning(str(e))
                     continue
                 except Exception as e:
-                    logger.error(f"Error replacing image {image_name}: {e}")
+                    logger.exception(f"Error replacing image {image_name}")
                     continue
         except Exception as e:
-            logger.error(f"Failed to replace images: {e}")
+            logger.exception("Failed to replace images")
             raise PowerPointTemplateError(f"Failed to replace images: {e}") from e
     
     def _replace_single_image(self, slide, shape, image_path: str) -> None:
@@ -236,7 +236,7 @@ class PowerPointTemplate:
 
             slide.shapes.add_picture(image_path, new_left, new_top, new_width, new_height)
         except Exception as e:
-            logger.error(f"Failed to replace single image: {e}")
+            logger.exception("Failed to replace single image")
             raise PowerPointTemplateError(f"Failed to replace single image: {e}") from e
     
     def save(self, output_path: str) -> None:
@@ -245,7 +245,7 @@ class PowerPointTemplate:
             self.prs.save(output_path)
             logger.info(f"Presentation saved as {output_path}")
         except Exception as e:
-            logger.error(f"Failed to save presentation: {e}")
+            logger.exception("Failed to save presentation")
             raise PowerPointTemplateError(f"Failed to save presentation: {e}") from e
 
 
@@ -269,14 +269,14 @@ def main():
         template.save(output_path)
         logger.info(" Presentation updated successfully!")
     
-    except FileNotFoundError as e:
-        logger.error(f"File not found error: {e}")
+    except FileNotFoundError:
+        logger.exception("File not found error")
         sys.exit(1)
-    except PowerPointTemplateError as e:
-        logger.error(f"PowerPoint template error: {e}")
+    except PowerPointTemplateError:
+        logger.exception("PowerPoint template error")
         sys.exit(1)
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
+    except Exception:
+        logger.exception("Unexpected error")
         sys.exit(1)
 
 if __name__ == "__main__":
