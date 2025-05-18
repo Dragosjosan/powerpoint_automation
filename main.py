@@ -14,9 +14,9 @@ logger.add(
     sys.stderr,
     format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <level>{message}</level>",
     level="DEBUG",
-    backtrace=True,    # Show traceback for errors
-    diagnose=True,     # Show variables in traceback
-    catch=True,        # Catch exceptions in the logging handler
+    backtrace=True,  # Show traceback for errors
+    diagnose=True,  # Show variables in traceback
+    catch=True,  # Catch exceptions in the logging handler
 )
 
 
@@ -43,24 +43,24 @@ def load_data(data_path: str) -> Dict[str, Any]:
             raise FileNotFoundError(f"Data file not found: {data_path}")
         with open(data_path) as f:
             return json.load(f)
-        
+
     except Exception as e:
         logger.exception(f"Failed to load data from {data_path}")
         raise PowerPointTemplateError(f"Failed to load data: {e}") from e
+
 
 class PowerPointTemplate:
     def __init__(self, template_path: str):
         self.template_path = self._initialize_template(template_path)
         self.prs = Presentation(self.template_path)
         self.slide_map = self._create_slide_map()
-    
+
     def _initialize_template(self, template_path: str) -> str:
         if not Path(template_path).exists():
             logger.exception(f"Template file not found: {template_path}")
             raise FileNotFoundError(f"Template file not found: {template_path}")
         logger.debug(f"Template file found: {template_path}")
         return template_path
-
 
     def _create_slide_map(self) -> Dict[str, Any]:
         try:
@@ -76,7 +76,6 @@ class PowerPointTemplate:
         except Exception as e:
             logger.exception("Failed to create slide map")
             raise PowerPointTemplateError(f"Failed to create slide map: {e}") from e
-        
 
     def apply_data(self, data_dict: Dict[str, Any]) -> None:
         try:
@@ -87,16 +86,16 @@ class PowerPointTemplate:
                     continue
 
                 slide = self.slide_map[slide_name]["slide"]
-                
+
                 try:
                     if "text" in slide_data:
                         logger.debug(f"Input data contains text data for slide: '{slide_name}'")
                         self._replace_text_placeholders(slide, slide_data["text"])
-                    
+
                     if "tables" in slide_data:
                         logger.debug(f"Input data contains table data for slide: '{slide_name}'")
                         self._update_tables(slide, slide_data["tables"])
-                    
+
                     if "images" in slide_data:
                         logger.debug(f"Input data contains image data for slide: '{slide_name}'")
                         self._replace_images(slide, slide_data["images"])
@@ -106,14 +105,13 @@ class PowerPointTemplate:
         except Exception as e:
             logger.exception("Failed to apply data to presentation")
             raise PowerPointTemplateError(f"Failed to apply data: {e}") from e
-    
 
     def _replace_text_placeholders(self, slide, text_data: Dict[str, str]) -> None:
         try:
             for shape in slide.shapes:
                 if not hasattr(shape, "text"):
                     continue
-                    
+
                 try:
                     text = shape.text
                     for key, value in text_data.items():
@@ -121,7 +119,7 @@ class PowerPointTemplate:
                         if placeholder in text:
                             logger.debug(f"Replacing placeholder: '{placeholder}' with '{value}'")
                             text = text.replace(placeholder, str(value))
-                            
+
                     if text != shape.text:
                         shape.text = text
                 except Exception as e:
@@ -130,7 +128,6 @@ class PowerPointTemplate:
         except Exception as e:
             logger.exception("Failed to replace text placeholders")
             raise PowerPointTemplateError(f"Failed to replace text: {e}") from e
-    
 
     def _update_tables(self, slide, tables_data: Dict[str, Any]) -> None:
         try:
@@ -144,16 +141,17 @@ class PowerPointTemplate:
                 try:
                     table_index = int(table_index)
                     table = None
-                    
+
                     if table_index < len(table_shapes):
                         table = table_shapes[table_index].table
                     else:
                         for shape in table_shapes:
-                            if (hasattr(shape, "name") and shape.name == table_index) or \
-                               (table_data.get("identifier") and table_data["identifier"] in shape.text):
+                            if (hasattr(shape, "name") and shape.name == table_index) or (
+                                table_data.get("identifier") and table_data["identifier"] in shape.text
+                            ):
                                 table = shape.table
                                 break
-                    
+
                     if table and "data" in table_data:
                         rows = min(len(table_data["data"]), len(table.rows))
                         for r in range(rows):
@@ -171,7 +169,6 @@ class PowerPointTemplate:
         except Exception as e:
             logger.exception("Failed to update tables")
             raise PowerPointTemplateError(f"Failed to update tables: {e}") from e
-    
 
     def _replace_images(self, slide, images_data: Dict[str, str]) -> None:
         try:
@@ -186,7 +183,9 @@ class PowerPointTemplate:
                         if image_index < len(images):
                             self._replace_single_image(slide, images[image_index], image_path)
                             continue
-                        placeholders = [shape for shape in slide.shapes if shape.shape_type == MSO_SHAPE_TYPE.PLACEHOLDER]
+                        placeholders = [
+                            shape for shape in slide.shapes if shape.shape_type == MSO_SHAPE_TYPE.PLACEHOLDER
+                        ]
                         if image_index < len(placeholders):
                             self._replace_single_image(slide, placeholders[image_index], image_path)
                             continue
@@ -194,9 +193,12 @@ class PowerPointTemplate:
                     else:
                         found = False
                         for shape in slide.shapes:
-                            if (shape.shape_type == MSO_SHAPE_TYPE.PICTURE or shape.shape_type == MSO_SHAPE_TYPE.PLACEHOLDER) and (
-                                (hasattr(shape, "name") and shape.name == image_name) or
-                                (hasattr(shape, "alt_text") and shape.alt_text == image_name)
+                            if (
+                                shape.shape_type == MSO_SHAPE_TYPE.PICTURE
+                                or shape.shape_type == MSO_SHAPE_TYPE.PLACEHOLDER
+                            ) and (
+                                (hasattr(shape, "name") and shape.name == image_name)
+                                or (hasattr(shape, "alt_text") and shape.alt_text == image_name)
                             ):
                                 self._replace_single_image(slide, shape, image_path)
                                 found = True
@@ -212,7 +214,7 @@ class PowerPointTemplate:
         except Exception as e:
             logger.exception("Failed to replace images")
             raise PowerPointTemplateError(f"Failed to replace images: {e}") from e
-    
+
     def _replace_single_image(self, slide, shape, image_path: str) -> None:
         """Replace a single image with error handling."""
         try:
@@ -238,7 +240,7 @@ class PowerPointTemplate:
         except Exception as e:
             logger.exception("Failed to replace single image")
             raise PowerPointTemplateError(f"Failed to replace single image: {e}") from e
-    
+
     def save(self, output_path: str) -> None:
         """Save the presentation with error handling."""
         try:
@@ -254,21 +256,21 @@ def main():
         logger.info("Starting PowerPoint template application")
         template_path = "example-presentation.pptx"
         template = PowerPointTemplate(template_path)
-        
+
         logger.debug("Available slides in template:")
         for title in template.slide_map.keys():
             logger.info(f"- {title}")
-        
+
         logger.info("Loading input data")
-        data = load_data("data.json")   
-        
+        data = load_data("data.json")
+
         logger.info("Applying data to template")
         template.apply_data(data)
-        
+
         output_path = "updated_presentation.pptx"
         template.save(output_path)
         logger.info(" Presentation updated successfully!")
-    
+
     except FileNotFoundError:
         logger.exception("File not found error")
         sys.exit(1)
@@ -278,6 +280,7 @@ def main():
     except Exception:
         logger.exception("Unexpected error")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
