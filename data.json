@@ -1,0 +1,44 @@
+{
+    "{{presentation_name}}": {
+        "text": {
+            "presentation_name": "Presentation name from python"
+        }
+    },
+    "Content": {
+        "text": {
+            "text_content_name": "Content from python",
+            "table_content_name": "Table from python",
+            "plot_content_name": "Plot from python"
+        }
+    },
+    "{{text_content_title}}": {
+        "text": {
+            "text_content_title": "Python Programming Language",
+            "text_content_data": "Python is the most popular programming language in the world"
+        }
+    },
+    "{{table_content_title}}": {
+        "text": {
+            "table_content_title": "Our company bitcoin profit"
+        },
+        "tables": {
+            "0": {
+                "data": [
+                    ["Quarter", "Price expected", "Price actual", "Profit"],
+                    ["Q1 2025", "$0.1M", "$0.07M", "$-0.03M"],
+                    ["Q2 2025", "$0.2M", "$0.07M", "$-1.03M"],
+                    ["Q3 2025", "$0.3M", "$1.0M", "$0.7M"],
+                    ["Q4 2025", "$0.4M", "$2.0M", "$1.6M"]
+                ]
+            }
+        }
+    },
+    "{{plot_content_title}}": {
+        "text": {
+            "plot_content_title": "Bitcoin price 2025"
+        },
+        "images": {
+            "0": "my_plot.png"
+        }
+    }
+}

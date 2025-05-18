@@ -11,7 +11,7 @@ wheels = [
 ]
 
 [[package]]
-name = "create-powerpoint-presentations"
+name = "powerpoint_automation"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
